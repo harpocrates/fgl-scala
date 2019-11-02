@@ -212,9 +212,9 @@ object Graph {
  *  val graph = {
  *    val builder = Graph.newBuilder[SortedMapGraph, String, String]
  *
- *    val n1 = exampleBuilder.freshNode("a")
- *    val n2 = exampleBuilder.freshNode("b")
- *    val n3 = exampleBuilder.freshNode("c")
+ *    val n1 = builder.freshNode("a")
+ *    val n2 = builder.freshNode("b")
+ *    val n3 = builder.freshNode("c")
 
  *    builder += LabelledEdge(n1, "right", n2)
  *    builder += LabelledEdge(n2, "down", n3)
