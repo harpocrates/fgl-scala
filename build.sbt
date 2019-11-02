@@ -1,6 +1,4 @@
 
-scalaVersion in ThisBuild := "2.13.1"
-
 val commonSettings: Seq[Setting[_]] = Seq(
   // offline in ThisBuild := true,
   organization := "com.atheriault",
@@ -27,6 +25,7 @@ lazy val fgl = (project in file("."))
   .settings(
     name := "fgl",
     version := "0.1.0.0",
+    scalaVersion := "2.13.1",
 
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-collection-contrib" % "0.1.0",

@@ -1,0 +1,7 @@
+.metals
+project/target
+target
+
+# Just for this project, I have extra SVGs and graphviz files
+*.dot
+*.svg
