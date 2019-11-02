@@ -94,14 +94,14 @@ object SortedMapGraph {
       var newTreeMap = graph.treeMap.removed(node)
 
       // Remove the other end of edges ending at the node we took out
-      for (n <- nodeContext.fromNodesMap.keys) {
+      for (n <- nodeContext.fromNodesMap.keys; if n != nodeContext.node) {
         val oldCtx: SortedContext[V,E] = newTreeMap(n)
         val newCtx: SortedContext[V,E] = oldCtx.copy(toNodesMap = oldCtx.toNodesMap.removed(node))
         newTreeMap = newTreeMap.updated(n, newCtx)
       }
 
       // Remove the other end of edges starting at the node we took out
-      for (n <- nodeContext.toNodesMap.keys) {
+      for (n <- nodeContext.toNodesMap.keys; if n != nodeContext.node) {
         val oldCtx: SortedContext[V,E] = newTreeMap(n)
         val newCtx: SortedContext[V,E] = oldCtx.copy(fromNodesMap = oldCtx.fromNodesMap.removed(node))
         newTreeMap = newTreeMap.updated(n, newCtx)
@@ -123,7 +123,7 @@ object SortedMapGraph {
           case (map1, map2) => map1.mergeByKeyWith(map2) {
             case (None, Some(s2)) => s2
             case (Some(s1), None) => s1
-            case (Some(s1), Some(s2)) => s1 intersect s2
+            case (Some(s1), Some(s2)) => s1 union s2
           }
         }
       val groupsBackward: Map[Node, TreeMap[Node, Set[E]]] = edges
@@ -131,7 +131,7 @@ object SortedMapGraph {
           case (map1, map2) => map1.mergeByKeyWith(map2) {
             case (None, Some(s2)) => s2
             case (Some(s1), None) => s1
-            case (Some(s1), Some(s2)) => s1 intersect s2
+            case (Some(s1), Some(s2)) => s1 union s2
           }
         }
 
@@ -178,19 +178,23 @@ object SortedMapGraph {
       // Update nodes supposed to be pointed to from the new node
       for ((edgeLbl, from) <- context.fromNode.edges) {
         fromNodesBuilder += from -> edgeLbl
-        val oldCtx = newGraph(from)
-        val newSet = oldCtx.toNodesMap.getOrElse(node, Set.empty).incl(edgeLbl)
-        val newCtx = oldCtx.copy(toNodesMap = oldCtx.toNodesMap.updated(node, newSet))
-        newGraph = newGraph.updated(from, newCtx)
+        if (from != node) {
+          val oldCtx = newGraph(from)
+          val newSet = oldCtx.toNodesMap.getOrElse(node, Set.empty).incl(edgeLbl)
+          val newCtx = oldCtx.copy(toNodesMap = oldCtx.toNodesMap.updated(node, newSet))
+          newGraph = newGraph.updated(from, newCtx)
+        }
       }
 
       // Update nodes supposed to be pointing to the new node
       for ((edgeLbl, to) <- context.toNode.edges) {
         toNodesBuilder += to -> edgeLbl
-        val oldCtx = newGraph(to)
-        val newSet = oldCtx.fromNodesMap.getOrElse(node, Set.empty).incl(edgeLbl)
-        val newCtx = oldCtx.copy(fromNodesMap = oldCtx.fromNodesMap.updated(node, newSet))
-        newGraph = newGraph.updated(to, newCtx)
+        if (to != node) {
+          val oldCtx = newGraph(to)
+          val newSet = oldCtx.fromNodesMap.getOrElse(node, Set.empty).incl(edgeLbl)
+          val newCtx = oldCtx.copy(fromNodesMap = oldCtx.fromNodesMap.updated(node, newSet))
+          newGraph = newGraph.updated(to, newCtx)
+        }
       }
     
       // Add the new node

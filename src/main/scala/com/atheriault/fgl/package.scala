@@ -52,6 +52,8 @@ package object fgl {
       case Some(_) => false
     }
 
+    def range(implicit impl: Graph[G]): (Node, Node) = impl.nodeRange(graph)
+
     /** Fold a function over the graph by recursively */
     def ufold[C](
       folder: (Context[V, E], C) => C,
@@ -84,7 +86,7 @@ package object fgl {
       if (isEmpty) {
         (0 until n).map(Node(_))
       } else {
-        val upper = impl.nodeRange(graph)._2.id
+        val upper = 1 + impl.nodeRange(graph)._2.id
         (upper until (n + upper)).map(Node(_))
       }
 
@@ -93,9 +95,30 @@ package object fgl {
       case Some(_) => true
     }
 
+    def size(implicit impl: Graph[G]): Int = impl.nodeCount(graph)
+
     def contains(node: LabelledNode[V])(implicit impl: Graph[G]): Boolean = elim(node.node) {
       case None => false
       case Some((ctx, _)) => ctx.value == node.value
+    }
+
+    // TODO: this is slower than it needs to be
+    def contains(edge: LabelledEdge[E])(implicit impl: Graph[G]): Boolean = elim(edge.from) {
+      case None => false
+      case Some((ctx, _)) => ctx.fromNode.edges.contains((edge.label, edge.to))
+    }
+
+
+    /** Find all nodes that link to the given node */
+    def pre(node: Node)(implicit impl: Graph[G]): Iterable[Node] = elim(node) {
+      case None => Iterable.empty
+      case Some((ctx, _)) => ctx.toNode.edges.view.map(_._2)
+    }
+
+    /** Find all nodes that link from the given node */
+    def suc(node: Node)(implicit impl: Graph[G]): Iterable[Node] = elim(node) {
+      case None => Iterable.empty
+      case Some((ctx, _)) => ctx.fromNode.edges.view.map(_._2)
     }
 
     def +(node: LabelledNode[V])(implicit impl: Graph[G]): G[V,E] =
@@ -104,11 +127,16 @@ package object fgl {
     def +(edge: LabelledEdge[E])(implicit impl: Graph[G]): G[V,E] = elim(edge.from) {
       case None => throw new IllegalArgumentException(s"Cannot add edge from non-existent vertex ${edge.from}")
       case Some((ctx, restGraph)) =>
+        val newToNode = if (edge.to == edge.from) {
+          Adj((edge.label, edge.from) :: ctx.toNode.edges)
+        } else {
+          ctx.toNode
+        }
         val newCtx = Context(
           fromNode = Adj((edge.label, edge.to) :: ctx.fromNode.edges),
           node = ctx.node,
           value = ctx.value,
-          toNode = ctx.toNode,
+          toNode = newToNode,
         )
         newCtx & restGraph
     }
@@ -121,12 +149,17 @@ package object fgl {
     /** Remove all edges connecting one node to another with that label */
     def -(edge: LabelledEdge[E])(implicit impl: Graph[G]): G[V,E] = elim(edge.from) {
       case None => graph
-      case Some((ctx, restGraph)) =>
+      case Some((ctx, restGraph)) => 
+        val newToNode = if (edge.to == edge.from) {
+          Adj(ctx.toNode.edges.filter(_ != (edge.label -> edge.from)))
+        } else {
+          ctx.toNode
+        }
         val newCtx = Context(
           fromNode = Adj(ctx.fromNode.edges.filter(_ != (edge.label -> edge.to))),
           node = ctx.node,
           value = ctx.value,
-          toNode = ctx.toNode,
+          toNode = newToNode,
         )
         newCtx & restGraph
     }
@@ -135,11 +168,16 @@ package object fgl {
     def -(edge: Edge)(implicit impl: Graph[G]): G[V,E] = elim(edge.from) {
       case None => graph
       case Some((ctx, restGraph)) =>
+        val newToNode = if (edge.to == edge.from) {
+          Adj(ctx.toNode.edges.filter(_._2 != edge.from))
+        } else {
+          ctx.toNode
+        }
         val newCtx = Context(
           fromNode = Adj(ctx.fromNode.edges.filter(_._2 != edge.to)),
           node = ctx.node,
           value = ctx.value,
-          toNode = ctx.toNode,
+          toNode = newToNode,
         )
         newCtx & restGraph
     }
@@ -148,6 +186,13 @@ package object fgl {
     def removeOne(edge: LabelledEdge[E])(implicit impl: Graph[G]): G[V,E] = elim(edge.from) {
       case None => graph
       case Some((ctx, restGraph)) =>
+        val newToNode = if (edge.to == edge.from) {
+          val (pre, _ :: suf) = ctx.toNode.edges.span(_ != (edge.label -> edge.from))
+          Adj(pre ++ suf)
+        } else {
+          ctx.toNode
+        }
+
         val newCtx = Context(
           fromNode = Adj {
             val (pre, _ :: suf) = ctx.fromNode.edges.span(_ != (edge.label -> edge.to))
@@ -155,7 +200,7 @@ package object fgl {
           },
           node = ctx.node,
           value = ctx.value,
-          toNode = ctx.toNode,
+          toNode = newToNode,
         )
         newCtx & restGraph
     }

@@ -12,7 +12,9 @@ trait Edge {
 }
 
 case class LabelledNode[V](node: Node, value: V)
-case class LabelledEdge[E](from: Node, label: E, to: Node) extends Edge
+case class LabelledEdge[E](from: Node, label: E, to: Node) extends Edge {
+  def reversed = LabelledEdge(to, label, from)
+}
 
 case class Adj[E](edges: List[(E, Node)]) {
   /** Map the labels, but preserve the structure */
@@ -36,7 +38,7 @@ trait Context[V, E] {
 
   /** The value stored on the node */
   def value: V
-  
+
   /** The adjacency list of edges pointing from this node */
   def fromNode: Adj[E]
 
@@ -50,6 +52,8 @@ trait Context[V, E] {
     nodeMap: V => W,
     edgeMap: E => D,
   ): Context[W,D]
+
+  def asLabelledNode: LabelledNode[V] = LabelledNode(node, value)
 }
 object Context {
   def apply[V,E](
@@ -66,7 +70,7 @@ private[fgl] case class SimpleContext[V,E](
   value: V,
   fromNode: Adj[E],
 ) extends Context[V,E] {
-  
+
   override def map[W,D](
     nodeMap: V => W,
     edgeMap: E => D,
@@ -99,7 +103,7 @@ trait Graph[G[_,_]] {
    */
   def isEmpty[V,E](graph: G[V,E]): Boolean
 
-  /** Try to match a particular node in the graph 
+  /** Try to match a particular node in the graph
    *
    *  @param node the ID of the node context to extract
    *  @param graph the graph from which to extract the context
@@ -135,7 +139,7 @@ trait Graph[G[_,_]] {
    *  @return a list of labelled nodes
    */
   def nodes[V,E](graph: G[V,E]): Iterable[LabelledNode[V]]
-  
+
   /** Get all the edges in a graph
    *
    *  @param graph the graph whose edges we are getting
@@ -159,7 +163,7 @@ trait Graph[G[_,_]] {
    *  @return the minimum and maximum node
    */
   def nodeRange[V,E](graph: G[V,E]): (Node, Node)
- 
+
   /** Create a new graph by adding the provided context to the graph.
    *
    *  @note node IDs in edges in the context should already be in the graph
@@ -207,7 +211,7 @@ object Graph {
  *  {{{
  *  val graph = {
  *    val builder = Graph.newBuilder[SortedMapGraph, String, String]
- *    
+ *
  *    val n1 = exampleBuilder.freshNode("a")
  *    val n2 = exampleBuilder.freshNode("b")
  *    val n3 = exampleBuilder.freshNode("c")
@@ -250,7 +254,7 @@ class GraphBuilder[G[_,_],V,E](private val graphImpl: Graph[G]) extends mutable.
     edges.clear()
   }
 
-  override def result(): G[V,E] = 
+  override def result(): G[V,E] =
     graphImpl.mkGraph(nodes.result(), edges.result())
 }
 
