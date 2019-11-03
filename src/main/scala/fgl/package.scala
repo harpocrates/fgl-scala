@@ -1,5 +1,3 @@
-package com.atheriault
-
 import java.io.BufferedWriter
 import scala.util._
 import java.io._
@@ -7,15 +5,6 @@ import scala.sys.process._
 
 
 
-case class DotFile(regular: java.io.File) {
-
-  def svg(fileName: String): java.io.File = {
-    Process("dot", Seq("-Tsvg", regular.getPath(), s"-o$fileName")).! match {
-      case 0 => new java.io.File(fileName)
-      case _ => throw new Exception("Failed to make dot SVG")
-    }
-  }
-}
 
 package object fgl {
 
@@ -243,6 +232,17 @@ package object fgl {
       }
 
       DotFile(file)
+    }
+  }
+
+
+  case class DotFile(regular: java.io.File) {
+
+    def svg(fileName: String): java.io.File = {
+      Process("dot", Seq("-Tsvg", regular.getPath(), s"-o$fileName")).! match {
+        case 0 => new java.io.File(fileName)
+        case _ => throw new Exception("Failed to make dot SVG")
+      }
     }
   }
 

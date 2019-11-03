@@ -1,4 +1,4 @@
-package com.atheriault.fgl
+package fgl
 
 import org.scalacheck.{Arbitrary, Gen, Properties}
 import org.scalacheck.Prop

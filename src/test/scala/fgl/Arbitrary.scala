@@ -1,4 +1,4 @@
-package com.atheriault.fgl
+package fgl
 
 import scala.collection.mutable
 import org.scalacheck.{Arbitrary, Gen, Shrink}
